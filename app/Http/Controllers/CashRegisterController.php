@@ -7,6 +7,7 @@ use App\CashRegister;
 use App\Utils\CashRegisterUtil;
 use App\Utils\ModuleUtil;
 use Illuminate\Http\Request;
+use App\Utils\TransactionUtil;
 
 class CashRegisterController extends Controller
 {
@@ -17,16 +18,18 @@ class CashRegisterController extends Controller
 
     protected $moduleUtil;
 
+    protected $transactionUtil;
     /**
      * Constructor
      *
      * @param  CashRegisterUtil  $cashRegisterUtil
      * @return void
      */
-    public function __construct(CashRegisterUtil $cashRegisterUtil, ModuleUtil $moduleUtil)
+    public function __construct(TransactionUtil $transactionUtil,CashRegisterUtil $cashRegisterUtil, ModuleUtil $moduleUtil)
     {
         $this->cashRegisterUtil = $cashRegisterUtil;
         $this->moduleUtil = $moduleUtil;
+        $this->transactionUtil = $transactionUtil;
     }
 
     /**
@@ -183,8 +186,34 @@ class CashRegisterController extends Controller
 
         $pos_settings = ! empty(request()->session()->get('business.pos_settings')) ? json_decode(request()->session()->get('business.pos_settings'), true) : [];
 
+            //Get Sell Return details
+            $transaction_types = [
+                'sell_return',
+            ];
+            $sell_return_details = $this->transactionUtil->getTransactionTotals(
+                $business_id,
+                $transaction_types,
+            );
+            $total_sell_return = ! empty($sell_return_details['total_sell_return_exc_tax']) ? $sell_return_details['total_sell_return_exc_tax'] : 0;
+            
+            $total_expense = $register_details->total_expense ?? 0;
+            $sale_type = ! empty(request()->input('sale_type')) ? request()->input('sale_type') : 'sell';
+
+            $sells = $this->transactionUtil->getListSells($business_id, $sale_type);
+            $sells->groupBy('transactions.id');
+            $results = $sells->get();
+
+            $total_paid = $results->sum('total_paid') ?? 0; 
+            $final_amount = $total_paid - $total_sell_return -$total_expense; 
+            $result = [
+                'total_paid' => $total_paid,
+                'total_sell_return' => $total_sell_return,
+                'total_expense' => $total_expense,
+                'final_amount' => $final_amount,
+            ];
+
         return view('cash_register.close_register_modal')
-                    ->with(compact('register_details', 'details', 'payment_types', 'pos_settings'));
+                    ->with(compact('register_details', 'details', 'payment_types', 'pos_settings', 'result'));
     }
 
     /**
