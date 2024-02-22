@@ -163,6 +163,15 @@ class SellController extends Controller
                     }
                 }
             }
+            if (! empty(request()->sku)) {
+                $keyword = request()->sku;
+                $sells->where(function ($query) use ($keyword) {
+                    $query->where('products.sku', 'like', "%{$keyword}%");
+                          // Other conditions...
+                });
+
+            }
+
 
             if (! empty(request()->input('payment_status')) && request()->input('payment_status') != 'overdue') {
                 $sells->where('transactions.payment_status', request()->input('payment_status'));
@@ -452,8 +461,13 @@ class SellController extends Controller
                     '<span class="total-tax" data-orig-value="{{$tax_amount}}">@format_currency($tax_amount)</span>'
                 )
                 ->editColumn(
-                    'skuu',
-                    '<span class="total-paid" data-orig-value="{{$total_paid}}">@format_currency($total_paid)</span>'
+                    'sku',
+                    function ($row) {
+                        $skus = $row->sell_lines->pluck('product.sku')->implode(', ');
+                        return $skus;
+                        // return '<span class="total-discount" data-orig-value="'.$discount.'">'.$this->transactionUtil->num_f($discount, true).'</span>';
+                    }
+                    // '<span class="total-paid" data-orig-value="{{$total_paid}}">@format_currency($total_paid)</span>'
                 )
                 ->editColumn(
                     'total_paid',
@@ -580,7 +594,7 @@ class SellController extends Controller
                         }
                     }, ]);
 
-            $rawColumns = ['final_total', 'action', 'skuu', 'total_paid', 'total_remaining', 'payment_status', 'invoice_no', 'discount_amount', 'tax_amount', 'total_before_tax', 'shipping_status', 'types_of_service_name', 'payment_methods', 'return_due', 'conatct_name', 'status'];
+            $rawColumns = ['final_total', 'action', 'sku', 'total_paid', 'total_remaining', 'payment_status', 'invoice_no', 'discount_amount', 'tax_amount', 'total_before_tax', 'shipping_status', 'types_of_service_name', 'payment_methods', 'return_due', 'conatct_name', 'status'];
 
             return $datatable->rawColumns($rawColumns)
                       ->make(true);

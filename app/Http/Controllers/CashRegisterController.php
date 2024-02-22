@@ -190,17 +190,32 @@ class CashRegisterController extends Controller
             $transaction_types = [
                 'sell_return',
             ];
+            // $start_date = "2024-01-12";// date("Y-m-d"); //"2023-11-19";
+            // $end_date = "2024-01-12";//date("Y-m-d");
+            $start_date = date("Y-m-d"); //"2023-11-19";
+            $end_date = date("Y-m-d");//"2023-12-19";
             $sell_return_details = $this->transactionUtil->getTransactionTotals(
                 $business_id,
                 $transaction_types,
+                $start_date,
+                $end_date
             );
-            $total_sell_return = ! empty($sell_return_details['total_sell_return_exc_tax']) ? $sell_return_details['total_sell_return_exc_tax'] : 0;
+            $total_sell_return = ! empty($sell_return_details['total_sell_return_inc_tax']) ? $sell_return_details['total_sell_return_inc_tax'] : 0;
             
-            $total_expense = $register_details->total_expense ?? 0;
+            $filters = [
+                'start_date'=>$start_date,
+                'end_date'=>$end_date,
+            ];
+
+            $total_expense_data = $this->transactionUtil->getExpenseReport($business_id, $filters, 'total');
+
+            $total_expense = $total_expense_data->total_expense ?? 0;
             $sale_type = ! empty(request()->input('sale_type')) ? request()->input('sale_type') : 'sell';
 
             $sells = $this->transactionUtil->getListSells($business_id, $sale_type);
             $sells->groupBy('transactions.id');
+            $sells->whereDate('transactions.transaction_date', '>=',$start_date)->whereDate('transactions.transaction_date', '<=', $end_date);
+            // dd(count($sells->get()));
             $results = $sells->get();
 
             $total_paid = $results->sum('total_paid') ?? 0; 

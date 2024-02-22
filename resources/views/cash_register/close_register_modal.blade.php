@@ -80,13 +80,14 @@
         <div class="col-xs-12">
           <h3 class="text-muted">
             {{ __('sale.total_paid') }} - {{ __('lang_v1.total_sales_return') }} - {{ __('report.total_expense') }} ::
-            {{ number_format($result['total_paid'], 2) }}
+             
+            <span class="display_currency" data-currency_symbol="true">{{ number_format($result['total_paid'], 0) }}</span>
             -
-            {{ number_format($result['total_sell_return'], 2) }}
+            <span class="display_currency" data-currency_symbol="true">{{ number_format($result['total_sell_return'], 0) }}</span>
             -
-            {{ number_format($register_details->total_expense, 2) }}
+            <span class="display_currency" data-currency_symbol="true">{{ number_format($result['total_expense'], 0) }}</span>
             =
-            {{ number_format($result['final_amount'], 2) }}
+            <span class="display_currency" data-currency_symbol="true">{{ number_format($result['final_amount'], 0) }}</span>
 
           </h3>
         </div>
